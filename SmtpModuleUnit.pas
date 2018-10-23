@@ -7,7 +7,7 @@ uses
   IdIOHandlerStack, IdSSL, IdSSLOpenSSL, IdServerIOHandler, IdTCPConnection,
   IdTCPClient, IdExplicitTLSClientServerBase, IdMessageClient, IdSMTPBase,
   IdSMTP, IdBaseComponent, IdComponent, IdCustomTCPServer, IdTCPServer,
-  IdCmdTCPServer, IdSMTPServer;
+  IdCmdTCPServer, IdSMTPServer, IdUserPassProvider;
 
 type
   TSmtpModule = class(TDataModule)
@@ -15,6 +15,7 @@ type
     MailClient: TIdSMTP;
     SslHandlerServer: TIdServerIOHandlerSSLOpenSSL;
     SslHandlerClient: TIdSSLIOHandlerSocketOpenSSL;
+    SmtpUserPass: TIdUserPassProvider;
   private
     { Private declarations }
   public

@@ -55,4 +55,10 @@ object SmtpModule: TSmtpModule
     Left = 24
     Top = 96
   end
+  object SmtpUserPass: TIdUserPassProvider
+    Username = 'SENDER'
+    Password = 'PASSWORD'
+    Left = 152
+    Top = 24
+  end
 end
