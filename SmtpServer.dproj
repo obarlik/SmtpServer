@@ -100,7 +100,7 @@
             <MainSource>MainSource</MainSource>
         </DelphiCompile>
         <DCCReference Include="SmtpServerUnit.pas">
-            <Form>Form1</Form>
+            <Form>MainForm</Form>
             <FormType>dfm</FormType>
         </DCCReference>
         <DCCReference Include="SmtpModuleUnit.pas">
