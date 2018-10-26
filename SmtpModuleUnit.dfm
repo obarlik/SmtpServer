@@ -3,8 +3,11 @@ object SmtpModule: TSmtpModule
   Height = 307
   Width = 332
   object MailServer: TIdSMTPServer
-    Bindings = <>
-    DefaultPort = 465
+    Bindings = <
+      item
+        IP = '0.0.0.0'
+        Port = 25
+      end>
     IOHandler = SslHandlerServer
     MaxConnections = 1000
     CommandHandlers = <>
@@ -27,22 +30,23 @@ object SmtpModule: TSmtpModule
     ReplyUnknownCommand.EnhancedCode.Available = True
     ReplyUnknownCommand.EnhancedCode.ReplyAsStr = '5.5.2'
     ServerName = 'Indy SMTP Server'
-    UseTLS = utUseImplicitTLS
-    Left = 80
+    UseTLS = utUseExplicitTLS
+    Left = 32
     Top = 24
   end
   object MailClient: TIdSMTP
     IOHandler = SslHandlerClient
     SASLMechanisms = <>
-    Left = 24
-    Top = 24
+    OnTLSNotAvailable = MailClientTLSNotAvailable
+    Left = 32
+    Top = 88
   end
   object SslHandlerServer: TIdServerIOHandlerSSLOpenSSL
     SSLOptions.Mode = sslmUnassigned
     SSLOptions.VerifyMode = []
     SSLOptions.VerifyDepth = 0
-    Left = 88
-    Top = 96
+    Left = 104
+    Top = 24
   end
   object SslHandlerClient: TIdSSLIOHandlerSocketOpenSSL
     Destination = ':25'
@@ -52,13 +56,13 @@ object SmtpModule: TSmtpModule
     SSLOptions.Mode = sslmUnassigned
     SSLOptions.VerifyMode = []
     SSLOptions.VerifyDepth = 0
-    Left = 24
-    Top = 96
+    Left = 104
+    Top = 88
   end
-  object SmtpUserPass: TIdUserPassProvider
+  object ServerUserPass: TIdUserPassProvider
     Username = 'SENDER'
     Password = 'PASSWORD'
-    Left = 152
+    Left = 192
     Top = 24
   end
 end
