@@ -10,18 +10,15 @@ uses
 type
   TConfigurationForm = class(TForm)
     GroupBox1: TGroupBox;
-    ServerPort: TUpDown;
-    LabeledEdit1: TLabeledEdit;
-    ServerUserName: TLabeledEdit;
-    ServerPassword: TLabeledEdit;
+    ServerPortUpDown: TUpDown;
+    ServerPort: TLabeledEdit;
     ServerSslMode: TComboBox;
-    ServerStatus: TComboBox;
     GroupBox2: TGroupBox;
     ClientHost: TLabeledEdit;
     ClientPassword: TLabeledEdit;
     ClientUserName: TLabeledEdit;
-    LabeledEdit2: TLabeledEdit;
-    ClientPort: TUpDown;
+    ClientPort: TLabeledEdit;
+    ClientPortUpDown: TUpDown;
     ServerIp: TLabeledEdit;
     PageControl1: TPageControl;
     TabSheet1: TTabSheet;
@@ -31,10 +28,19 @@ type
     TabSheet2: TTabSheet;
     ServerName: TLabeledEdit;
     ClientTest: TButton;
-    procedure FormCreate(Sender: TObject);
+    ServerUserName: TLabeledEdit;
+    ServerPassword: TLabeledEdit;
+    GroupBox3: TGroupBox;
+    GroupBox4: TGroupBox;
+    GroupBox5: TGroupBox;
+    QueueDirectory: TLabeledEdit;
+    SelectFolder: TButton;
     procedure FormClose(Sender: TObject; var Action: TCloseAction);
     procedure ButtonApplyClick(Sender: TObject);
     procedure ClientTestClick(Sender: TObject);
+    procedure TestConnectionClick(Sender: TObject);
+    procedure OnConfigurationChange(Sender: TObject);
+    procedure FormShow(Sender: TObject);
 
   private
     _Modified : Boolean;
@@ -69,19 +75,23 @@ end;
 
 
 procedure TConfigurationForm.ClientTestClick(Sender: TObject);
+var
+  testResult : string;
 begin
   with TSmtpTestForm.Create(Self) do
   try
     if ShowModal() = mrOk then
     begin
-      if (SmtpModule.TestClient(
-            ClientHost.Text,
-            ClientPort.Position,
-            ClientSslMode.ItemIndex = 1,
-            ClientUserName.Text,
-            ClientPassword.Text,
-            MailFrom.Text,
-            MailTo.Text)) then
+      testResult := SmtpModule.TestClient(
+              ClientHost.Text,
+              StrToInt(ClientPort.Text),
+              ClientSslMode.ItemIndex = 1,
+              ClientUserName.Text,
+              ClientPassword.Text,
+              MailFrom.Text,
+              MailTo.Text);
+
+      if (testResult = 'OK') then
       begin
         ShowMessage('Client connection is successful!');
       end
@@ -102,16 +112,28 @@ begin
 end;
 
 
-procedure TConfigurationForm.FormCreate(Sender: TObject);
+procedure TConfigurationForm.FormShow(Sender: TObject);
 begin
-  LoadSettings();
+  if Visible then
+    LoadSettings();
+end;
+
+
+procedure TConfigurationForm.OnConfigurationChange(Sender: TObject);
+begin
+  Modified := true;
 end;
 
 
 procedure TConfigurationForm.SetModified(v: Boolean);
 begin
-  _Modified := true;
+  _Modified := v;
   ButtonApply.Enabled := _Modified;
+end;
+
+
+procedure TConfigurationForm.TestConnectionClick(Sender: TObject);
+begin
 end;
 
 
@@ -120,42 +142,39 @@ procedure TConfigurationForm.LoadSettings();
 var
   s : TSmtpSettings;
 begin
-  s := SmtpModule.SmtpSettings;
+  try
+    s := SmtpModule.SmtpSettings;
 
-  // Read listening server settings
+    // Read listening server settings
 
-  ServerName.Text := s.ServiceName;
+    ServerName.Text := s.ServiceName;
 
-  ServerIp.Text := s.ListenIp;
-  ServerPort.Position := s.ListenPort;
+    ServerIp.Text := s.ListenIp;
+    ServerPort.Text := IntToStr(s.ListenPort);
 
-  if s.SslRequired then
-    ServerSslMode.ItemIndex := 1
-  else
-    ServerSslMode.ItemIndex := 0;
+    if s.SslRequired then
+      ServerSslMode.ItemIndex := 1
+    else
+      ServerSslMode.ItemIndex := 0;
 
-  ServerUserName.Text := s.Username;
-  ServerPassword.Text := S.Password;
+    ServerUserName.Text := s.Username;
+    ServerPassword.Text := S.Password;
 
-  if s.Listening then
-    ServerStatus.ItemIndex := 1
-  else
-    ServerStatus.ItemIndex := 0;
+    // Read remote server settings
 
-  // Read remote server settings
+    ClientHost.Text := s.RemoteHost;
+    ClientPort.Text := IntToStr(s.RemotePort);
 
-  ClientHost.Text := s.RemoteHost;
-  ClientPort.Position := s.RemotePort;
+    if s.RemoteSslRequired then
+      ClientSslMode.ItemIndex := 1
+    else
+      ClientSslMode.ItemIndex := 0;
 
-  if s.RemoteSslRequired then
-    ClientSslMode.ItemIndex := 1
-  else
-    ClientSslMode.ItemIndex := 0;
-
-  ClientUserName.Text := s.RemoteUserName;
-  ClientPassword.Text := s.RemotePassword;
-
-  Modified := false;
+    ClientUserName.Text := s.RemoteUserName;
+    ClientPassword.Text := s.RemotePassword;
+  finally
+    Modified := false;
+  end;
 end;
 
 
@@ -172,7 +191,7 @@ begin
     s.SslRequired := ServerSslMode.ItemIndex = 1;
 
     s.ListenIp := ServerIp.Text;
-    s.ListenPort := ServerPort.Position;
+    s.ListenPort := StrToInt(ServerPort.Text);
     s.Username := ServerUserName.Text;
     s.Password := ServerPassword.Text;
 
@@ -181,7 +200,7 @@ begin
     s.RemoteSslRequired := ClientSslMode.ItemIndex = 1;
 
     s.RemoteHost := ClientHost.Text;
-    s.RemotePort := ClientPort.Position;
+    s.RemotePort := StrToInt(ClientPort.Text);
     s.RemoteUserName := ClientUserName.Text;
     s.RemotePassword := ClientPassword.Text;
     s.ServiceName := ServerName.Text;

@@ -19,14 +19,16 @@ type
     ListenPort : word;
     UserName : string;
     Password : string;
-    Listening : boolean;
 
     RemoteHost : string;
     RemotePort : word;
     RemoteSslRequired : boolean;
     RemoteUserName : string;
     RemotePassword : string;
+
+    QueueDirectory : string;
   end;
+
 
   TSmtpModule = class(TDataModule)
     MailServer: TIdSMTPServer;
@@ -36,6 +38,9 @@ type
     ServerUserPass: TIdUserPassProvider;
     procedure MailClientTLSNotAvailable(Asender: TObject;
       var VContinue: Boolean);
+    procedure DataModuleCreate(Sender: TObject);
+    procedure DataModuleDestroy(Sender: TObject);
+
   private
     { Private declarations }
 
@@ -43,9 +48,15 @@ type
     _WritingSettings : Boolean;
 
     procedure SetSmtpSettings(v: TSmtpSettings);
-    function GetSmtpSettings():TSmtpSettings;
+    function GetSmtpSettings(): TSmtpSettings;
+
+    procedure LoadSettingsFromFile(fileName: string);
+    procedure SaveSettingsToFile(fileName: string);
+
   public
     { Public declarations }
+
+    QueueDirectory : string;
 
     property ReadingSettings : Boolean read _ReadingSettings;
     property WritingSettings : Boolean read _WritingSettings;
@@ -53,7 +64,7 @@ type
 
     function TestClient(host: string; port: word; ssl: boolean;
                         user: string; password: string;
-                        testFrom : string = ''; testTo : string = ''): boolean;
+                        testFrom: string = ''; testTo: string = ''): string;
   end;
 
 
@@ -69,6 +80,76 @@ implementation
 
 uses IdMessage;
 
+
+procedure TSmtpModule.LoadSettingsFromFile(fileName: string);
+var
+  sl: TStringList;
+  cfg: TSmtpSettings;
+begin
+  if not FileExists(fileName) then
+    Exit;
+
+  sl := TStringList.Create();
+  cfg := TSmtpSettings.Create();
+
+  try
+    sl.LoadFromFile(fileName);
+
+    cfg.ServiceName := sl.Values['ServiceName'];
+    cfg.SslRequired := StrToBool(sl.Values['SslRequired']);
+    cfg.ListenIp := sl.Values['ListenIp'];
+    cfg.ListenPort := StrToInt(sl.Values['ListenPort']);
+    cfg.UserName := sl.Values['UserName'];
+    cfg.Password := sl.Values['Password'];
+
+    cfg.RemoteHost := sl.Values['RemoteHost'];
+    cfg.RemotePort := StrToInt(sl.Values['RemotePort']);
+    cfg.RemoteSslRequired := StrToBool(sl.Values['RemoteSslRequired']);
+    cfg.RemoteUserName := sl.Values['RemoteUserName'];
+    cfg.RemotePassword := sl.Values['RemotePassword'];
+
+    cfg.QueueDirectory := sl.Values['QueueDirectory'];
+
+    SmtpSettings := cfg;
+  finally
+    cfg.Free();
+    sl.Free();
+  end;
+end;
+
+
+procedure TSmtpModule.SaveSettingsToFile(fileName: string);
+var
+  sl: TStringList;
+  cfg: TSmtpSettings;
+begin
+  sl := TStringList.Create();
+  cfg := SmtpSettings;
+
+  try
+    sl.Values['ServiceName'] := cfg.ServiceName;
+    sl.Values['SslRequired'] := BoolToStr(cfg.SslRequired, True);
+    sl.Values['ListenIp'] := cfg.ListenIp;
+    sl.Values['ListenPort'] := IntToStr(cfg.ListenPort);
+    sl.Values['UserName'] := cfg.UserName;
+    sl.Values['Password'] := cfg.Password;
+
+    sl.Values['RemoteHost'] := cfg.RemoteHost;
+    sl.Values['RemotePort'] := IntToStr(cfg.RemotePort);
+    sl.Values['RemoteSslRequired'] := BoolToStr(cfg.RemoteSslRequired, True);
+    sl.Values['RemoteUserName'] := cfg.RemoteUserName;
+    sl.Values['RemotePassword'] := cfg.RemotePassword;
+
+    sl.Values['QueueDirectory'] := cfg.QueueDirectory;
+
+    sl.SaveToFile(fileName);
+  finally
+    cfg.Free();
+    sl.Free();
+  end;
+end;
+
+
 procedure TSmtpModule.MailClientTLSNotAvailable(Asender: TObject;
   var VContinue: Boolean);
 begin
@@ -79,6 +160,18 @@ begin
   else
     VContinue := false;
   end;
+end;
+
+
+procedure TSmtpModule.DataModuleCreate(Sender: TObject);
+begin
+  LoadSettingsFromFile('Smtp.conf');
+end;
+
+
+procedure TSmtpModule.DataModuleDestroy(Sender: TObject);
+begin
+  SaveSettingsToFile('Smtp.conf');
 end;
 
 
@@ -100,8 +193,6 @@ begin
     Result.UserName := ServerUserPass.Username;
     Result.Password := ServerUserPass.Password;
 
-    Result.Listening := MailServer.Active;
-
     // Read remote server settings
 
     Result.RemoteHost := MailClient.Host;
@@ -110,6 +201,8 @@ begin
     Result.ServiceName := MailClient.MailAgent;
     Result.RemoteUserName := MailClient.Username;
     Result.RemotePassword := MailClient.Password;
+
+    Result.QueueDirectory := QueueDirectory;
 
   finally
     _ReadingSettings := false;
@@ -124,8 +217,8 @@ begin
   if (WritingSettings or ReadingSettings) then
     raise Exception.Create('Please wait for pending operation to finish before writing SMTP settings!');
 
-  if (not TestClient(v.RemoteHost, v.RemotePort, v.RemoteSslRequired,
-                     v.RemoteUserName, v.RemotePassword)) then
+  if (TestClient(v.RemoteHost, v.RemotePort, v.RemoteSslRequired,
+                 v.RemoteUserName, v.RemotePassword) <> 'OK') then
     raise Exception.Create('Client connection test failed!');
 
   // Backup existing configuration
@@ -167,7 +260,9 @@ begin
         MailClient.Password := v.RemotePassword;
         MailClient.MailAgent := v.ServiceName;
 
-        MailServer.Active := v.Listening;
+        QueueDirectory := v.QueueDirectory;
+
+        MailServer.Active := true;
       finally
         _WritingSettings := false;
       end;
@@ -185,12 +280,14 @@ end;
 
 function TSmtpModule.TestClient(host: string; port: word; ssl: boolean;
                                 user: string; password: string;
-                                testFrom: string = ''; testTo: string = ''): boolean;
+                                testFrom: string = ''; testTo: string = ''): string;
 var
+  status : (stConnect, stAuthenticate, stTestMail, stDone);
   cli: TIdSmtp;
   testMail : TIdMessage;
   sslHandler : TIdSSLIOHandlerSocketOpenSSL;
 begin
+  status := stConnect;
   cli := TIdSMTP.Create(Self);
   sslHandler := TIdSSLIOHandlerSocketOpenSSL.Create(Self);
 
@@ -208,31 +305,55 @@ begin
 
       cli.Connect(host, port);
 
-      Result := cli.Connected()
-            and cli.Authenticate();
-
-      if (Result and (testFrom <> '')) then
+      if (cli.Connected()) then
       begin
-        testMail := TIdMessage.Create(Self);
+        status := stAuthenticate;
 
-        testMail.From.Address := testFrom;
-        testMail.Recipients.Add().Address := testTo;
+        if (cli.Authenticate()) then
+        begin
+          if (testFrom <> '') then
+          begin
+            status := stTestMail;
 
-        testMail.Subject := 'About test mail';
-        testMail.Body.Text := 'Test mail sending successful!';
+            testMail := TIdMessage.Create(Self);
 
-        cli.Send(testMail);
+            testMail.From.Address := testFrom;
+            testMail.Recipients.Add().Address := testTo;
+
+            testMail.Subject := 'About test mail';
+            testMail.Body.Text := 'Test mail sending successful!';
+
+            try
+              cli.Send(testMail);
+            except
+              on e: Exception do
+              begin
+                Result := e.Message;
+                raise;
+              end;
+            end;
+          end;
+
+          status := stDone;
+        end;
       end;
 
-    except
-      Result := false;
-    end;
-  finally
-    if MailClient.Connected() then
-        MailClient.Disconnect(true);
+    finally
+      if cli.Connected() then
+          cli.Disconnect(true);
 
-    cli.Free;
-    sslHandler.Free;
+      cli.Free;
+      sslHandler.Free;
+    end;
+  except
+    // Shh!
+  end;
+
+  case status of
+    stConnect: Result := 'Invalid host address!';
+    stAuthenticate: Result := 'Invalid user name or password!';
+    stTestMail: Result := 'Test e-mail sending failed with message: ' + Result;
+    stDone: Result := 'OK';
   end;
 end;
 

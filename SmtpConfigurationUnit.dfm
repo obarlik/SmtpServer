@@ -14,7 +14,7 @@ object ConfigurationForm: TConfigurationForm
   Font.Style = []
   OldCreateOrder = False
   OnClose = FormClose
-  OnCreate = FormCreate
+  OnShow = FormShow
   DesignSize = (
     364
     411)
@@ -27,9 +27,10 @@ object ConfigurationForm: TConfigurationForm
     Height = 361
     ActivePage = TabSheet1
     Anchors = [akLeft, akTop, akRight, akBottom]
+    MultiLine = True
     TabOrder = 0
     object TabSheet1: TTabSheet
-      Caption = 'Connection'
+      Caption = 'Local'
       DesignSize = (
         341
         333)
@@ -37,28 +38,28 @@ object ConfigurationForm: TConfigurationForm
         Left = 5
         Top = 3
         Width = 331
-        Height = 169
+        Height = 110
         Anchors = [akLeft, akTop, akRight]
         Caption = 'Listening Server'
-        Constraints.MinWidth = 330
+        Constraints.MinWidth = 311
         TabOrder = 0
         DesignSize = (
           331
-          169)
-        object ServerPort: TUpDown
+          110)
+        object ServerPortUpDown: TUpDown
           Left = 133
-          Top = 79
+          Top = 74
           Width = 16
           Height = 21
-          Associate = LabeledEdit1
+          Associate = ServerPort
           Min = 1
           Max = 65535
           Position = 25
           TabOrder = 3
         end
-        object LabeledEdit1: TLabeledEdit
+        object ServerPort: TLabeledEdit
           Left = 84
-          Top = 79
+          Top = 74
           Width = 49
           Height = 21
           EditLabel.Width = 20
@@ -68,39 +69,11 @@ object ConfigurationForm: TConfigurationForm
           LabelSpacing = 10
           TabOrder = 2
           Text = '25'
-        end
-        object ServerUserName: TLabeledEdit
-          Left = 84
-          Top = 106
-          Width = 233
-          Height = 21
-          Anchors = [akLeft, akTop, akRight]
-          EditLabel.Width = 51
-          EditLabel.Height = 13
-          EditLabel.Caption = 'User name'
-          LabelPosition = lpLeft
-          LabelSpacing = 10
-          TabOrder = 6
-          TextHint = '<User name>'
-        end
-        object ServerPassword: TLabeledEdit
-          Left = 84
-          Top = 133
-          Width = 233
-          Height = 21
-          Anchors = [akLeft, akTop, akRight]
-          EditLabel.Width = 46
-          EditLabel.Height = 13
-          EditLabel.Caption = 'Password'
-          LabelPosition = lpLeft
-          LabelSpacing = 10
-          PasswordChar = #9679
-          TabOrder = 7
-          TextHint = '<Password>'
+          OnChange = OnConfigurationChange
         end
         object ServerSslMode: TComboBox
           Left = 155
-          Top = 79
+          Top = 74
           Width = 90
           Height = 21
           Style = csDropDownList
@@ -108,30 +81,16 @@ object ConfigurationForm: TConfigurationForm
           TabOrder = 4
           Text = 'Optional SSL'
           TextHint = 'SSL Mode'
+          OnChange = OnConfigurationChange
           Items.Strings = (
             'Optional SSL'
             'Forced SSL')
         end
-        object ServerStatus: TComboBox
-          Left = 251
-          Top = 79
-          Width = 68
-          Height = 21
-          Style = csDropDownList
-          ItemIndex = 1
-          TabOrder = 5
-          Text = 'Active'
-          TextHint = '<Server Status>'
-          Items.Strings = (
-            'Passive'
-            'Active')
-        end
         object ServerIp: TLabeledEdit
           Left = 84
-          Top = 52
-          Width = 233
+          Top = 47
+          Width = 110
           Height = 21
-          Anchors = [akLeft, akTop, akRight]
           EditLabel.Width = 10
           EditLabel.Height = 13
           EditLabel.Caption = 'IP'
@@ -140,10 +99,11 @@ object ConfigurationForm: TConfigurationForm
           TabOrder = 1
           Text = '0.0.0.0'
           TextHint = '<User name>'
+          OnChange = OnConfigurationChange
         end
         object ServerName: TLabeledEdit
           Left = 84
-          Top = 25
+          Top = 20
           Width = 233
           Height = 21
           Anchors = [akLeft, akTop, akRight]
@@ -155,20 +115,106 @@ object ConfigurationForm: TConfigurationForm
           TabOrder = 0
           Text = 'My SMTP'
           TextHint = '<Server name>'
+          OnChange = OnConfigurationChange
         end
       end
-      object GroupBox2: TGroupBox
-        Left = 3
-        Top = 178
-        Width = 333
-        Height = 143
+      object GroupBox3: TGroupBox
+        Left = 5
+        Top = 119
+        Width = 331
+        Height = 79
         Anchors = [akLeft, akTop, akRight]
-        Caption = 'Remote Server'
-        Constraints.MinWidth = 330
+        Caption = 'Authentication'
         TabOrder = 1
         DesignSize = (
+          331
+          79)
+        object ServerPassword: TLabeledEdit
+          Left = 84
+          Top = 47
+          Width = 233
+          Height = 21
+          Anchors = [akLeft, akTop, akRight]
+          EditLabel.Width = 46
+          EditLabel.Height = 13
+          EditLabel.Caption = 'Password'
+          LabelPosition = lpLeft
+          LabelSpacing = 10
+          PasswordChar = #9679
+          TabOrder = 1
+          TextHint = '<Password>'
+          OnChange = OnConfigurationChange
+        end
+        object ServerUserName: TLabeledEdit
+          Left = 84
+          Top = 20
+          Width = 233
+          Height = 21
+          Anchors = [akLeft, akTop, akRight]
+          EditLabel.Width = 51
+          EditLabel.Height = 13
+          EditLabel.Caption = 'User name'
+          LabelPosition = lpLeft
+          LabelSpacing = 10
+          TabOrder = 0
+          TextHint = '<User name>'
+          OnChange = OnConfigurationChange
+        end
+      end
+      object GroupBox5: TGroupBox
+        Left = 3
+        Top = 204
+        Width = 331
+        Height = 105
+        Anchors = [akLeft, akTop, akRight]
+        Caption = 'Queue'
+        TabOrder = 2
+        DesignSize = (
+          331
+          105)
+        object QueueDirectory: TLabeledEdit
+          Left = 82
+          Top = 20
+          Width = 203
+          Height = 21
+          Anchors = [akLeft, akTop, akRight]
+          EditLabel.Width = 44
+          EditLabel.Height = 13
+          EditLabel.Caption = 'Directory'
+          LabelPosition = lpLeft
+          LabelSpacing = 10
+          TabOrder = 0
+          OnChange = OnConfigurationChange
+        end
+        object SelectFolder: TButton
+          Left = 291
+          Top = 20
+          Width = 24
+          Height = 21
+          Anchors = [akTop, akRight]
+          Caption = '...'
+          TabOrder = 1
+        end
+      end
+    end
+    object TabSheet2: TTabSheet
+      Caption = 'Remote'
+      ImageIndex = 1
+      DesignSize = (
+        341
+        333)
+      object GroupBox2: TGroupBox
+        Left = 5
+        Top = 3
+        Width = 333
+        Height = 78
+        Anchors = [akLeft, akTop, akRight]
+        Caption = 'Remote Server'
+        Constraints.MinWidth = 313
+        TabOrder = 0
+        DesignSize = (
           333
-          143)
+          78)
         object ClientHost: TLabeledEdit
           Left = 84
           Top = 20
@@ -182,37 +228,9 @@ object ConfigurationForm: TConfigurationForm
           LabelSpacing = 10
           TabOrder = 0
           TextHint = '<Host Address>'
+          OnChange = OnConfigurationChange
         end
-        object ClientPassword: TLabeledEdit
-          Left = 84
-          Top = 102
-          Width = 235
-          Height = 21
-          Anchors = [akLeft, akTop, akRight]
-          EditLabel.Width = 46
-          EditLabel.Height = 13
-          EditLabel.Caption = 'Password'
-          LabelPosition = lpLeft
-          LabelSpacing = 10
-          PasswordChar = #9679
-          TabOrder = 5
-          TextHint = '<Password>'
-        end
-        object ClientUserName: TLabeledEdit
-          Left = 84
-          Top = 75
-          Width = 235
-          Height = 21
-          Anchors = [akLeft, akTop, akRight]
-          EditLabel.Width = 52
-          EditLabel.Height = 13
-          EditLabel.Caption = 'User Name'
-          LabelPosition = lpLeft
-          LabelSpacing = 10
-          TabOrder = 4
-          TextHint = '<User Name>'
-        end
-        object LabeledEdit2: TLabeledEdit
+        object ClientPort: TLabeledEdit
           Left = 84
           Top = 47
           Width = 49
@@ -224,13 +242,14 @@ object ConfigurationForm: TConfigurationForm
           LabelSpacing = 10
           TabOrder = 1
           Text = '25'
+          OnChange = OnConfigurationChange
         end
-        object ClientPort: TUpDown
+        object ClientPortUpDown: TUpDown
           Left = 133
           Top = 47
           Width = 16
           Height = 21
-          Associate = LabeledEdit2
+          Associate = ClientPort
           Min = 1
           Max = 65535
           Position = 25
@@ -246,24 +265,66 @@ object ConfigurationForm: TConfigurationForm
           TabOrder = 3
           Text = 'Require SSL'
           TextHint = 'SSL Mode'
+          OnChange = OnConfigurationChange
           Items.Strings = (
             'No SSL'
             'Require SSL')
         end
+      end
+      object GroupBox4: TGroupBox
+        Left = 3
+        Top = 87
+        Width = 335
+        Height = 82
+        Anchors = [akLeft, akTop, akRight]
+        Caption = 'Authentication'
+        TabOrder = 1
+        DesignSize = (
+          335
+          82)
+        object ClientPassword: TLabeledEdit
+          Left = 86
+          Top = 47
+          Width = 161
+          Height = 21
+          Anchors = [akLeft, akTop, akRight]
+          EditLabel.Width = 46
+          EditLabel.Height = 13
+          EditLabel.Caption = 'Password'
+          LabelPosition = lpLeft
+          LabelSpacing = 10
+          PasswordChar = #9679
+          TabOrder = 1
+          TextHint = '<Password>'
+          OnChange = OnConfigurationChange
+        end
+        object ClientUserName: TLabeledEdit
+          Left = 86
+          Top = 20
+          Width = 161
+          Height = 21
+          Anchors = [akLeft, akTop, akRight]
+          EditLabel.Width = 52
+          EditLabel.Height = 13
+          EditLabel.Caption = 'User Name'
+          LabelPosition = lpLeft
+          LabelSpacing = 10
+          TabOrder = 0
+          TextHint = '<User Name>'
+          OnChange = OnConfigurationChange
+        end
         object ClientTest: TButton
-          Left = 251
-          Top = 46
-          Width = 69
-          Height = 23
-          Caption = 'Test'
-          TabOrder = 6
+          Left = 253
+          Top = 20
+          Width = 68
+          Height = 48
+          Anchors = [akTop, akRight]
+          Caption = 'SEND TEST MAIL'
+          TabOrder = 2
+          WordWrap = True
           OnClick = ClientTestClick
         end
       end
-    end
-    object TabSheet2: TTabSheet
-      Caption = 'Authentication'
-      ImageIndex = 1
     end
   end
   object ButtonClose: TButton
@@ -283,6 +344,7 @@ object ConfigurationForm: TConfigurationForm
     Height = 25
     Anchors = [akRight, akBottom]
     Caption = 'Apply'
+    Enabled = False
     TabOrder = 1
     OnClick = ButtonApplyClick
   end

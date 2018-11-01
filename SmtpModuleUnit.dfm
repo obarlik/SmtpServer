@@ -1,8 +1,11 @@
 object SmtpModule: TSmtpModule
   OldCreateOrder = False
+  OnCreate = DataModuleCreate
+  OnDestroy = DataModuleDestroy
   Height = 307
   Width = 332
   object MailServer: TIdSMTPServer
+    Active = True
     Bindings = <
       item
         IP = '0.0.0.0'
